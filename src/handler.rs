@@ -98,52 +98,6 @@ pub async fn register_user_handler(
     Ok(Json(user_response))
 }
 
-fn generate_token(
-    user_id: uuid::Uuid,
-    max_age: i64,
-    private_key: String,
-) -> Result<TokenDetails, (StatusCode, Json<serde_json::Value>)> {
-    token::generate_jwt_token(user_id, max_age, private_key).map_err(|e| {
-        let error_response = serde_json::json!({
-            "status": "error",
-            "message": format!("error generating token: {}", e),
-        });
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-    })
-}
-
-async fn save_token_data_to_redis(
-    data: &Arc<AppState>,
-    token_details: &TokenDetails,
-    max_age: i64,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
-    let mut redis_client = data
-        .redis_client
-        .get_async_connection()
-        .await
-        .map_err(|e| {
-            let error_response = serde_json::json!({
-                "status": "error",
-                "message": format!("Redis error: {}", e),
-            });
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-    redis_client
-        .set_ex(
-            token_details.token_uuid.to_string(),
-            token_details.user_id.to_string(),
-            (max_age * 60) as usize,
-        )
-        .await
-        .map_err(|e| {
-            let error_response = serde_json::json!({
-                "status": "error",
-                "message": format_args!("{}", e),
-            });
-            (StatusCode::UNPROCESSABLE_ENTITY, Json(error_response))
-        })?;
-    Ok(())
-}
 pub async fn login_user_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<LoginUserSchema>,
@@ -495,4 +449,51 @@ fn filter_user_record(user: &User) -> FilteredUser {
         createdAt: user.created_at.unwrap(),
         updatedAt: user.updated_at.unwrap(),
     }
+}
+
+fn generate_token(
+    user_id: uuid::Uuid,
+    max_age: i64,
+    private_key: String,
+) -> Result<TokenDetails, (StatusCode, Json<serde_json::Value>)> {
+    token::generate_jwt_token(user_id, max_age, private_key).map_err(|e| {
+        let error_response = serde_json::json!({
+            "status": "error",
+            "message": format!("error generating token: {}", e),
+        });
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })
+}
+
+async fn save_token_data_to_redis(
+    data: &Arc<AppState>,
+    token_details: &TokenDetails,
+    max_age: i64,
+) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+    let mut redis_client = data
+        .redis_client
+        .get_async_connection()
+        .await
+        .map_err(|e| {
+            let error_response = serde_json::json!({
+                "status": "error",
+                "message": format!("Redis error: {}", e),
+            });
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+    redis_client
+        .set_ex(
+            token_details.token_uuid.to_string(),
+            token_details.user_id.to_string(),
+            (max_age * 60) as usize,
+        )
+        .await
+        .map_err(|e| {
+            let error_response = serde_json::json!({
+                "status": "error",
+                "message": format_args!("{}", e),
+            });
+            (StatusCode::UNPROCESSABLE_ENTITY, Json(error_response))
+        })?;
+    Ok(())
 }
