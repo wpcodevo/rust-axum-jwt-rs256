@@ -25,7 +25,7 @@ use crate::{
 use redis::AsyncCommands;
 
 pub async fn health_checker_handler() -> impl IntoResponse {
-    const MESSAGE: &str = "Rust - JWT Revocation and Role-based Authorization";
+    const MESSAGE: &str = "Rust and Axum Framework: JWT Access and Refresh Tokens";
 
     let json_response = serde_json::json!({
         "status": "success",
