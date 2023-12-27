@@ -159,30 +159,28 @@ pub async fn login_user_handler(
     .await?;
 
     let access_cookie = Cookie::build(
-        "access_token",
-        access_token_details.token.clone().unwrap_or_default(),
+        ("access_token",
+        access_token_details.token.clone().unwrap_or_default()),
     )
     .path("/")
     .max_age(time::Duration::minutes(data.env.access_token_max_age * 60))
     .same_site(SameSite::Lax)
-    .http_only(true)
-    .finish();
+    .http_only(true);
+
     let refresh_cookie = Cookie::build(
-        "refresh_token",
-        refresh_token_details.token.unwrap_or_default(),
+        ("refresh_token",
+        refresh_token_details.token.unwrap_or_default()),
     )
     .path("/")
     .max_age(time::Duration::minutes(data.env.refresh_token_max_age * 60))
     .same_site(SameSite::Lax)
-    .http_only(true)
-    .finish();
+    .http_only(true);
 
-    let logged_in_cookie = Cookie::build("logged_in", "true")
+    let logged_in_cookie = Cookie::build(("logged_in", "true"))
         .path("/")
         .max_age(time::Duration::minutes(data.env.access_token_max_age * 60))
         .same_site(SameSite::Lax)
-        .http_only(false)
-        .finish();
+        .http_only(false);
 
     let mut response = Response::new(
         json!({"status": "success", "access_token": access_token_details.token.unwrap()})
@@ -295,21 +293,19 @@ pub async fn refresh_access_token_handler(
     save_token_data_to_redis(&data, &access_token_details, data.env.access_token_max_age).await?;
 
     let access_cookie = Cookie::build(
-        "access_token",
-        access_token_details.token.clone().unwrap_or_default(),
+        ("access_token",
+        access_token_details.token.clone().unwrap_or_default()),
     )
     .path("/")
     .max_age(time::Duration::minutes(data.env.access_token_max_age * 60))
     .same_site(SameSite::Lax)
-    .http_only(true)
-    .finish();
+    .http_only(true);
 
-    let logged_in_cookie = Cookie::build("logged_in", "true")
+    let logged_in_cookie = Cookie::build(("logged_in", "true"))
         .path("/")
         .max_age(time::Duration::minutes(data.env.access_token_max_age * 60))
         .same_site(SameSite::Lax)
-        .http_only(false)
-        .finish();
+        .http_only(false);
 
     let mut response = Response::new(
         json!({"status": "success", "access_token": access_token_details.token.unwrap()})
@@ -386,25 +382,22 @@ pub async fn logout_handler(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
         })?;
 
-    let access_cookie = Cookie::build("access_token", "")
+    let access_cookie = Cookie::build(("access_token", ""))
         .path("/")
         .max_age(time::Duration::minutes(-1))
         .same_site(SameSite::Lax)
-        .http_only(true)
-        .finish();
-    let refresh_cookie = Cookie::build("refresh_token", "")
+        .http_only(true);
+    let refresh_cookie = Cookie::build(("refresh_token", ""))
         .path("/")
         .max_age(time::Duration::minutes(-1))
         .same_site(SameSite::Lax)
-        .http_only(true)
-        .finish();
+        .http_only(true);
 
-    let logged_in_cookie = Cookie::build("logged_in", "true")
+    let logged_in_cookie = Cookie::build(("logged_in", "true"))
         .path("/")
         .max_age(time::Duration::minutes(-1))
         .same_site(SameSite::Lax)
-        .http_only(false)
-        .finish();
+        .http_only(false);
 
     let mut headers = HeaderMap::new();
     headers.append(
@@ -485,7 +478,7 @@ async fn save_token_data_to_redis(
         .set_ex(
             token_details.token_uuid.to_string(),
             token_details.user_id.to_string(),
-            (max_age * 60) as usize,
+            (max_age * 60) as u64,
         )
         .await
         .map_err(|e| {

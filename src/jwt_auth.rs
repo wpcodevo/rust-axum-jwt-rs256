@@ -5,7 +5,7 @@ use axum::{
     http::{header, Request, StatusCode},
     middleware::Next,
     response::IntoResponse,
-    Json,
+    Json, body::Body,
 };
 
 use axum_extra::extract::cookie::CookieJar;
@@ -26,11 +26,11 @@ pub struct JWTAuthMiddleware {
     pub access_token_uuid: uuid::Uuid,
 }
 
-pub async fn auth<B>(
+pub async fn auth(
     cookie_jar: CookieJar,
     State(data): State<Arc<AppState>>,
-    mut req: Request<B>,
-    next: Next<B>,
+    mut req: Request<Body>,
+    next: Next,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     let access_token = cookie_jar
         .get("access_token")
